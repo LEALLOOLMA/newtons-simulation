@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Newton's Laws Interactive Simulation APP</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                        },
+                        physics: {
+                            gravity: '#ef4444',   // Red
+                            normal: '#06b6d4',    // Cyan
+                            friction: '#f59e0b',  // Amber
+                            tension: '#8b5cf6',   // Purple
+                            applied: '#10b981',   // Emerald
+                            internal: '#ec4899',  // Pink
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter & Fira Code -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+        }
+        /* Glassmorphism & Custom styling */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card-light {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        /* Range slider polish */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            border-radius: 9999px;
+            background: #334155;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #10b981;
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+            transition: transform 0.15s ease, background-color 0.15s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            background: #34d399;
+        }
+        /* Smooth state transitions */
+        .tab-btn {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-white">
+
+    <!-- Header Navigation -->
+    <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-50 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                    <i class="fa-solid fa-atom text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-base font-bold text-white tracking-tight flex items-center gap-2">
+                        Newton's Laws Simulator
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Global Vector Toggles -->
+            <div class="hidden sm:flex items-center space-x-4 bg-slate-800/60 p-1.5 rounded-xl border border-slate-700/50">
+                <label class="flex items-center space-x-2 text-xs font-medium text-slate-300 cursor-pointer px-2 py-1 rounded-lg hover:bg-slate-700/50 transition-colors">
+                    <input type="checkbox" id="showVectorsToggle" checked class="w-4 h-4 text-emerald-500 rounded focus:ring-0 accent-emerald-500 cursor-pointer">
+                    <span class="flex items-center gap-1.5">
+                        <i class="fa-solid fa-arrow-up-long text-emerald-400"></i> Force Vectors
+                    </span>
+                </label>
+                <div class="h-4 w-px bg-slate-700"></div>
+                <label class="flex items-center space-x-2 text-xs font-medium text-slate-300 cursor-pointer px-2 py-1 rounded-lg hover:bg-slate-700/50 transition-colors">
+                    <input type="checkbox" id="showComponentsToggle" checked class="w-4 h-4 text-emerald-500 rounded focus:ring-0 accent-emerald-500 cursor-pointer">
+                    <span class="flex items-center gap-1.5">
+                        <i class="fa-solid fa-diagram-project text-cyan-400"></i> Vector Components
+                    </span>
+                </label>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Tab Selection Bar -->
+    <div class="bg-slate-900 border-b border-slate-800/80">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <nav class="flex space-x-2 sm:space-x-4 overflow-x-auto py-2.5 no-scrollbar" id="tabContainer">
+                <button data-tab="inclined" class="tab-btn px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl flex items-center space-x-2.5 whitespace-nowrap bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-sm">
+                    <i class="fa-solid fa-chart-line transform -scale-x-100 text-base"></i>
+                    <span>Inclined Plane</span>
+                </button>
+                <button data-tab="pulley" class="tab-btn px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl flex items-center space-x-2.5 whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent">
+                    <i class="fa-solid fa-arrows-spin text-base"></i>
+                    <span>Pulley System</span>
+                </button>
+                <button data-tab="direct" class="tab-btn px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl flex items-center space-x-2.5 whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent">
+                    <i class="fa-solid fa-boxes-stacked text-base"></i>
+                    <span>Contact Force between Two Bodies</span>
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Main Workspace Grid -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Left Sidebar: Controls & Parameter Modifiers (4 cols) -->
+        <aside class="lg:col-span-4 space-y-5 flex flex-col">
+            <div class="glass-card rounded-2xl p-5 shadow-xl flex-1 flex flex-col justify-between border border-slate-800">
+                <div>
+                    <!-- Control Title -->
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3.5 mb-4">
+                        <div class="flex items-center space-x-2.5">
+                            <div class="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+                                <i class="fa-solid fa-sliders"></i>
+                            </div>
+                            <h2 class="text-sm font-bold text-white uppercase tracking-wider" id="controlTitle">Parameters</h2>
+                        </div>
+                        <button id="resetParamsBtn" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium px-2.5 py-1.5 rounded-lg border border-slate-700 transition-all flex items-center gap-1.5">
+                            <i class="fa-solid fa-arrow-rotate-right text-[10px]"></i> Reset
+                        </button>
+                    </div>
+
+                    <!-- Dynamic Controls Container -->
+                    <div id="dynamicControls" class="space-y-4">
+                        <!-- Populated dynamically via JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Simulation Action Bar -->
+                <div class="pt-5 border-t border-slate-800 mt-6 space-y-4">
+                    <!-- Simulation Speed Control -->
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-xs font-medium text-slate-400 flex items-center gap-1.5">
+                                <i class="fa-solid fa-gauge-high text-indigo-400"></i> Speed Rate
+                            </span>
+                            <span id="speedValue" class="text-xs font-mono font-bold text-indigo-400">1.0x</span>
+                        </div>
+                        <input type="range" id="simSpeed" min="0.1" max="2.0" step="0.1" value="1.0" class="w-full">
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <button id="playPauseBtn" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center space-x-2 transition-all shadow-lg shadow-emerald-900/30 active:scale-95 text-xs">
+                            <i class="fa-solid fa-play" id="playIcon"></i>
+                            <span id="playText">Play</span>
+                        </button>
+                        <button id="directionBtn" aria-pressed="false" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center space-x-1.5 border border-slate-700 transition-all active:scale-95 text-xs">
+                            <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                            <span id="directionText">Forward</span>
+                        </button>
+                        <button id="stepBackBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center space-x-1.5 border border-slate-700 transition-all active:scale-95 text-xs">
+                            <i class="fa-solid fa-backward-step"></i>
+                            <span>Step Back</span>
+                        </button>
+                        <button id="resetBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center space-x-2 border border-slate-700 transition-all active:scale-95 text-xs">
+                            <i class="fa-solid fa-rotate-left"></i>
+                            <span>Restart</span>
+                        </button>
+                        <button id="stepBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center space-x-1.5 border border-slate-700 transition-all active:scale-95 text-xs">
+                            <i class="fa-solid fa-forward-step"></i>
+                            <span>Forward by 1 frame</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Right Main Viewport & Analytics (8 cols) -->
+        <section class="lg:col-span-8 space-y-5">
+            <!-- Canvas Interactive Viewport Card -->
+            <div class="glass-card rounded-2xl p-4 shadow-xl border border-slate-800 relative overflow-hidden flex flex-col">
+                <div class="flex items-center justify-between mb-3 px-1">
+                    <div class="flex items-center space-x-2.5">
+                        <span class="inline-block w-2.5 h-2.5 bg-emerald-400 rounded-full animate-ping"></span>
+                        <h2 class="text-sm font-semibold text-slate-200" id="canvasTitle">Simulation</h2>
+                    </div>
+                    <div id="statusBadge" class="text-xs font-semibold px-3 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                        At Rest
+                    </div>
+                </div>
+
+                <!-- Simulation Canvas Container -->
+                <div class="relative w-full h-[600px] bg-slate-950/80 rounded-xl overflow-hidden border border-slate-800/80 shadow-inner">
+                    <canvas id="physicsCanvas" class="w-full h-full block"></canvas>
+
+                    <!-- Direct Canvas Legend Overlay -->
+                    <div class="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-lg p-2 flex items-center gap-3 text-[10px] text-slate-300">
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-physics-gravity"></span> Mg</span>
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-physics-normal"></span> Normal</span>
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-physics-friction"></span> Friction</span>
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-physics-tension"></span> Tension/Internal</span>
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-physics-applied"></span> Force F</span>
+                    </div>
+
+                </div>
+                <div class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2 bg-slate-900/90 border border-slate-800 rounded-xl p-3 text-xs font-mono shadow-lg">
+                    <div class="flex items-center justify-start gap-2"><span class="text-slate-400">Position (x):</span> <span id="telemetryPos" class="text-slate-200 font-bold">0.00 m</span></div>
+                    <div class="flex items-center justify-start gap-2"><span class="text-slate-400">Velocity (v):</span> <span id="telemetryVel" class="text-cyan-400 font-bold">0.00 m/s</span></div>
+                    <div class="flex items-center justify-start gap-2"><span class="text-slate-400">Acceleration (a):</span> <span id="telemetryAccel" class="text-amber-400 font-bold">0.00 m/s²</span></div>
+                </div>
+            </div>
+
+            <!-- Live Dashboard Metrics Cards -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5" id="metricsGrid">
+                <!-- Dynamically generated metrics cards -->
+            </div>
+
+            <!-- Step-by-Step Mathematical Derivation Cards -->
+            <div class="glass-card rounded-2xl p-5 shadow-xl border border-slate-800">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+                    <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center space-x-2">
+                        <i class="fa-solid fa-calculator text-emerald-400"></i>
+                        <span>Step-by-Step Dynamic Equations</span>
+                    </h3>
+                    <span class="text-xs text-slate-400 font-mono">F_net = m · a</span>
+                </div>
+                <div id="physicsDerivation" class="text-xs font-mono text-slate-300 space-y-2 bg-slate-950/60 p-4 rounded-xl border border-slate-800 overflow-x-auto leading-relaxed">
+                    <!-- Formulas inserted dynamically -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900/40 border-t border-slate-800/60 mt-auto py-3">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500">
+            Newtonian Dynamics Simulator &bull; Interactive Classical Physics
+        </div>
+    </footer>
+
+    <!-- MAIN JAVASCRIPT LOGIC -->
+    <script>
+        // --- GLOBAL APP STATE & CONSTANTS ---
+        const STATE = {
+            currentTab: 'inclined', // 'inclined', 'pulley', 'direct'
+            isRunning: false,
+            direction: 1,
+            motionHistory: [],
+            timeScale: 1.0,
+            showVectors: true,
+            showComponents: true,
+            
+            // Physical Parameters
+            params: {
+                g: 9.81,
+
+                // Scenario 1: Inclined Plane
+                m: 5.0,        // Box mass (kg)
+                theta: 30,     // Angle (degrees)
+                mu_s: 0.40,    // Static friction coefficient
+                mu_k: 0.25,    // Kinetic friction coefficient
+                F_app: 0,      // Applied force along plane (+ up, - down)
+
+                // Scenario 2: Pulley System
+                m1: 4.0,       // Mass on flat surface (kg)
+                m2: 3.0,       // Hanging mass (kg)
+                mu_p: 0.20,    // Friction coefficient on flat surface
+                pulleyFrictionToggle: true,
+
+                // Scenario 3: Two-body Direct
+                mA: 3.0,       // Block A mass (kg)
+                mB: 2.0,       // Block B mass (kg)
+                F_ext: 25,     // External force (N)
+                mu_d: 0.15,    // Surface friction coefficient
+                directType: 'push' // 'push' (side-by-side) or 'pull' (string)
+            },
+
+            // Dynamic Motion State Variables
+            motion: {
+                pos: 0,         // Displacement (m)
+                vel: 0,         // Velocity (m/s)
+                accel: 0,       // Acceleration (m/s²)
+                state: 'Rest',  // Motion status text
+                pulleyAngle: 0, // Pulley rotation angle (rad)
+                
+                // Forces telemetry
+                normalForce: 0,
+                frictionForce: 0,
+                tension: 0,
+                contactForce: 0
+            }
+        };
+
+        // Canvas Setup
+        const canvas = document.getElementById('physicsCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let lastTime = 0;
+
+        // --- INITIALIZATION ---
+        window.addEventListener('load', () => {
+            resizeCanvas();
+            setupTabListeners();
+            setupGlobalListeners();
+            switchTab('inclined');
+            
+            // Animation Loop
+            requestAnimationFrame(gameLoop);
+        });
+
+        window.addEventListener('resize', resizeCanvas);
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth * (window.devicePixelRatio || 1);
+            canvas.height = container.clientHeight * (window.devicePixelRatio || 1);
+            ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+        }
+
+        function getCanvasSize() {
+            const container = canvas.parentElement;
+            return {
+                width: container.clientWidth,
+                height: container.clientHeight
+            };
+        }
+
+        // --- TABS & CONTROLS ---
+        function setupTabListeners() {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabName = btn.getAttribute('data-tab');
+                    switchTab(tabName);
+                });
+            });
+        }
+
+        function switchTab(tabName) {
+            STATE.currentTab = tabName;
+            
+            // Style Active Tab
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                if (btn.getAttribute('data-tab') === tabName) {
+                    btn.className = "tab-btn px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl flex items-center space-x-2.5 whitespace-nowrap bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-sm";
+                } else {
+                    btn.className = "tab-btn px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-xl flex items-center space-x-2.5 whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent";
+                }
+            });
+
+            resetSimulation();
+            renderControls();
+            calculatePhysics();
+            updateUI();
+        }
+
+        function setupGlobalListeners() {
+            document.getElementById('playPauseBtn').addEventListener('click', togglePlay);
+            document.getElementById('resetBtn').addEventListener('click', resetSimulation);
+            document.getElementById('stepBtn').addEventListener('click', () => {
+                if (STATE.isRunning) togglePlay();
+                stepSimulation(0.016, true);
+            });
+            document.getElementById('stepBackBtn').addEventListener('click', stepBackSimulation);
+            document.getElementById('directionBtn').addEventListener('click', toggleDirection);
+
+            document.getElementById('simSpeed').addEventListener('input', (e) => {
+                STATE.timeScale = parseFloat(e.target.value);
+                document.getElementById('speedValue').textContent = STATE.timeScale.toFixed(1) + 'x';
+            });
+
+            document.getElementById('showVectorsToggle').addEventListener('change', (e) => {
+                STATE.showVectors = e.target.checked;
+            });
+
+            document.getElementById('showComponentsToggle').addEventListener('change', (e) => {
+                STATE.showComponents = e.target.checked;
+            });
+
+            document.getElementById('resetParamsBtn').addEventListener('click', loadDefaults);
+        }
+
+        function loadDefaults() {
+            if (STATE.currentTab === 'inclined') {
+                STATE.params.m = 5.0;
+                STATE.params.theta = 30;
+                STATE.params.mu_s = 0.40;
+                STATE.params.mu_k = 0.25;
+                STATE.params.F_app = 0;
+            } else if (STATE.currentTab === 'pulley') {
+                STATE.params.m1 = 4.0;
+                STATE.params.m2 = 3.0;
+                STATE.params.mu_p = 0.20;
+                STATE.params.pulleyFrictionToggle = true;
+            } else if (STATE.currentTab === 'direct') {
+                STATE.params.mA = 3.0;
+                STATE.params.mB = 2.0;
+                STATE.params.F_ext = 25;
+                STATE.params.mu_d = 0.15;
+                STATE.params.directType = 'push';
+            }
+            STATE.params.g = 9.81;
+            resetSimulation();
+            renderControls();
+        }
+
+        function togglePlay() {
+            STATE.isRunning = !STATE.isRunning;
+            const playIcon = document.getElementById('playIcon');
+            const playText = document.getElementById('playText');
+            if (STATE.isRunning) {
+                playIcon.className = "fa-solid fa-pause";
+                playText.textContent = "Pause";
+            } else {
+                playIcon.className = "fa-solid fa-play";
+                playText.textContent = "Play";
+            }
+        }
+
+        function toggleDirection() {
+            STATE.direction *= -1;
+            const directionBtn = document.getElementById('directionBtn');
+            const directionText = document.getElementById('directionText');
+            const isBackward = STATE.direction < 0;
+            directionBtn.setAttribute('aria-pressed', String(isBackward));
+            directionText.textContent = isBackward ? 'Backward' : 'Forward';
+            calculatePhysics();
+            updateUI();
+        }
+
+        function resetSimulation() {
+            STATE.isRunning = false;
+            STATE.motionHistory.length = 0;
+            STATE.motion.pos = 0;
+            STATE.motion.vel = 0;
+            STATE.motion.accel = 0;
+            STATE.motion.pulleyAngle = 0;
+            STATE.motion.state = 'At Rest';
+            document.getElementById('playIcon').className = "fa-solid fa-play";
+            document.getElementById('playText').textContent = "Play";
+            calculatePhysics();
+            updateUI();
+        }
+
+        // --- CONTROL CARDS GENERATOR ---
+        function renderControls() {
+            const container = document.getElementById('dynamicControls');
+            const title = document.getElementById('controlTitle');
+            container.innerHTML = '';
+
+            if (STATE.currentTab === 'inclined') {
+                title.textContent = "Inclined Plane Setup";
+                container.innerHTML = `
+                    ${createSlider('m', 'Box Mass (m)', STATE.params.m, 0.5, 20, 0.5, 'kg')}
+                    ${createSlider('theta', 'Incline Angle (θ)', STATE.params.theta, 0, 75, 1, '°')}
+                    ${createSlider('mu_s', 'Static Friction Coeff (μs)', STATE.params.mu_s, 0, 1.0, 0.05, '')}
+                    ${createSlider('mu_k', 'Kinetic Friction Coeff (μk)', STATE.params.mu_k, 0, 1.0, 0.05, '')}
+                    ${createSlider('F_app', 'Applied Force along plane (F)', STATE.params.F_app, -50, 50, 1, 'N')}
+                `;
+            } else if (STATE.currentTab === 'pulley') {
+                title.textContent = "Pulley System Setup";
+                container.innerHTML = `
+                    ${createSlider('m1', 'Table Block Mass (m1)', STATE.params.m1, 0.5, 20, 0.5, 'kg')}
+                    ${createSlider('m2', 'Hanging Block Mass (m2)', STATE.params.m2, 0.5, 20, 0.5, 'kg')}
+                    ${createSlider('mu_p', 'Table Friction Coeff (μ)', STATE.params.mu_p, 0, 1.0, 0.05, '')}
+                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-800 mt-2">
+                        <span class="text-xs font-medium text-slate-300">Surface Friction</span>
+                        <button id="togglePulleyFriction" class="px-3 py-1 rounded-lg text-xs font-semibold transition-all ${STATE.params.pulleyFrictionToggle ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-400 border border-slate-700'}">
+                            ${STATE.params.pulleyFrictionToggle ? 'Enabled' : 'Disabled (Smooth)'}
+                        </button>
+                    </div>
+                `;
+            } else if (STATE.currentTab === 'direct') {
+                title.textContent = "Two-Body Direct Setup";
+                container.innerHTML = `
+                    <div class="mb-3">
+                        <label class="text-xs font-medium text-slate-400 mb-1.5 block">Interaction Type</label>
+                        <div class="grid grid-cols-2 gap-2 p-1 bg-slate-900 rounded-xl border border-slate-800">
+                            <button id="typePushBtn" class="py-1.5 px-3 rounded-lg text-xs font-medium transition-all ${STATE.params.directType === 'push' ? 'bg-emerald-500 text-white font-bold shadow' : 'text-slate-400 hover:text-slate-200'}">
+                                Contact Push
+                            </button>
+                            <button id="typePullBtn" class="py-1.5 px-3 rounded-lg text-xs font-medium transition-all ${STATE.params.directType === 'pull' ? 'bg-emerald-500 text-white font-bold shadow' : 'text-slate-400 hover:text-slate-200'}">
+                                String Pull
+                            </button>
+                        </div>
+                    </div>
+                    ${createSlider('mA', 'Block A Mass (mA)', STATE.params.mA, 0.5, 20, 0.5, 'kg')}
+                    ${createSlider('mB', 'Block B Mass (mB)', STATE.params.mB, 0.5, 20, 0.5, 'kg')}
+                    ${createSlider('F_ext', 'External Applied Force (F)', STATE.params.F_ext, 0, 100, 1, 'N')}
+                    ${createSlider('mu_d', 'Surface Friction Coeff (μ)', STATE.params.mu_d, 0, 1.0, 0.05, '')}
+                `;
+            }
+
+            attachSliderListeners();
+        }
+
+        function createSlider(id, label, value, min, max, step, unit) {
+            return `
+                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800/80">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <label for="${id}" class="text-xs font-medium text-slate-300">${label}</label>
+                        <span id="${id}_val" class="text-xs font-mono font-bold text-emerald-400">${value} ${unit}</span>
+                    </div>
+                    <input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${value}" class="w-full">
+                </div>
+            `;
+        }
+
+        function attachSliderListeners() {
+            const inputs = document.querySelectorAll('#dynamicControls input[type="range"]');
+            inputs.forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const id = e.target.id;
+                    const val = parseFloat(e.target.value);
+                    STATE.params[id] = val;
+
+                    // Ensure kinetic friction <= static friction
+                    if (id === 'mu_k' && val > STATE.params.mu_s) {
+                        STATE.params.mu_s = val;
+                        const sInput = document.getElementById('mu_s');
+                        if (sInput) sInput.value = val;
+                        const sVal = document.getElementById('mu_s_val');
+                        if (sVal) sVal.textContent = val + '';
+                    } else if (id === 'mu_s' && val < STATE.params.mu_k) {
+                        STATE.params.mu_k = val;
+                        const kInput = document.getElementById('mu_k');
+                        if (kInput) kInput.value = val;
+                        const kVal = document.getElementById('mu_k_val');
+                        if (kVal) kVal.textContent = val + '';
+                    }
+
+                    const valLabel = document.getElementById(`${id}_val`);
+                    if (valLabel) {
+                        const unit = valLabel.textContent.split(' ')[1] || '';
+                        valLabel.textContent = `${val} ${unit}`;
+                    }
+
+                    calculatePhysics();
+                    updateUI();
+                });
+            });
+
+            const togglePulleyFriction = document.getElementById('togglePulleyFriction');
+            if (togglePulleyFriction) {
+                togglePulleyFriction.addEventListener('click', () => {
+                    STATE.params.pulleyFrictionToggle = !STATE.params.pulleyFrictionToggle;
+                    renderControls();
+                    calculatePhysics();
+                    updateUI();
+                });
+            }
+
+            const typePushBtn = document.getElementById('typePushBtn');
+            const typePullBtn = document.getElementById('typePullBtn');
+            if (typePushBtn && typePullBtn) {
+                typePushBtn.addEventListener('click', () => {
+                    STATE.params.directType = 'push';
+                    renderControls();
+                    calculatePhysics();
+                    updateUI();
+                });
+                typePullBtn.addEventListener('click', () => {
+                    STATE.params.directType = 'pull';
+                    renderControls();
+                    calculatePhysics();
+                    updateUI();
+                });
+            }
+        }
+
+        // --- CORE PHYSICS CALCULATOR ---
+        function calculatePhysics() {
+            const p = STATE.params;
+            const m = STATE.motion;
+
+            if (STATE.currentTab === 'inclined') {
+                const rad = (p.theta * Math.PI) / 180;
+                const Mg = p.m * p.g;
+                const Mg_par = Mg * Math.sin(rad);  // Pulls down incline
+                const Mg_perp = Mg * Math.cos(rad); // Normal direction
+
+                m.normalForce = Mg_perp;
+
+                // Net applied driving force along incline (+ up, - down)
+                const F_net_drive = STATE.direction * (p.F_app - Mg_par);
+
+                const max_static_f = p.mu_s * m.normalForce;
+                const kinetic_f_mag = p.mu_k * m.normalForce;
+
+                if (Math.abs(m.vel) < 0.001) {
+                    if (Math.abs(F_net_drive) <= max_static_f) {
+                        // Held in static equilibrium
+                        m.frictionForce = -F_net_drive;
+                        m.accel = 0;
+                        m.vel = 0;
+                        m.state = 'Static Hold';
+                    } else {
+                        // Accelerating
+                        const f_dir = F_net_drive > 0 ? -1 : 1;
+                        m.frictionForce = f_dir * kinetic_f_mag;
+                        m.accel = (F_net_drive + m.frictionForce) / p.m;
+                        m.state = 'Accelerating';
+                    }
+                } else {
+                    const vel_dir = Math.sign(m.vel);
+                    m.frictionForce = -vel_dir * kinetic_f_mag;
+                    m.accel = (F_net_drive + m.frictionForce) / p.m;
+                    m.state = 'Moving';
+                }
+
+            } else if (STATE.currentTab === 'pulley') {
+                const mu = p.pulleyFrictionToggle ? p.mu_p : 0;
+                const N1 = p.m1 * p.g;
+                m.normalForce = N1;
+
+                const max_static = mu * N1;
+                const m2_pull = STATE.direction * p.m2 * p.g;
+
+                if (Math.abs(m2_pull) <= max_static && Math.abs(m.vel) < 0.001) {
+                    m.accel = 0;
+                    m.vel = 0;
+                    m.frictionForce = -m2_pull;
+                    m.tension = p.m2 * p.g;
+                    m.state = 'Static Friction Hold';
+                } else {
+                    const direction = Math.abs(m.vel) >= 0.001 ? Math.sign(m.vel) : Math.sign(m2_pull);
+                    m.frictionForce = -direction * mu * N1;
+                    m.accel = (m2_pull + m.frictionForce) / (p.m1 + p.m2);
+                    m.tension = p.m2 * (p.g - m.accel);
+                    m.state = Math.abs(m.accel) > 0.001 ? 'Accelerating' : 'At Rest';
+                }
+
+            } else if (STATE.currentTab === 'direct') {
+                const totalMass = p.mA + p.mB;
+                const totalNormal = totalMass * p.g;
+
+                const max_static = p.mu_d * totalNormal;
+                const kinetic_f_total = p.mu_d * totalNormal;
+
+                const appliedForce = STATE.direction * p.F_ext;
+                if (Math.abs(appliedForce) <= max_static && Math.abs(m.vel) < 0.001) {
+                    m.accel = 0;
+                    m.vel = 0;
+                    m.frictionForce = -appliedForce;
+                    const internalMass = p.directType === 'push'
+                        ? (STATE.direction > 0 ? p.mB : p.mA)
+                        : (STATE.direction > 0 ? p.mA : p.mB);
+                    m.contactForce = appliedForce * (internalMass / totalMass);
+                    m.tension = Math.abs(m.contactForce);
+                    m.state = 'Static Hold';
+                } else {
+                    const direction = Math.abs(m.vel) >= 0.001 ? Math.sign(m.vel) : STATE.direction;
+                    m.frictionForce = -direction * kinetic_f_total;
+                    m.accel = (appliedForce + m.frictionForce) / totalMass;
+
+                    const internalMass = p.directType === 'push'
+                        ? (direction > 0 ? p.mB : p.mA)
+                        : (direction > 0 ? p.mA : p.mB);
+                    m.contactForce = p.directType === 'pull'
+                        ? Math.abs(m.accel) * internalMass + p.mu_d * internalMass * p.g
+                        : internalMass * m.accel - direction * p.mu_d * internalMass * p.g;
+                    m.tension = Math.abs(m.contactForce);
+                    m.state = Math.abs(m.accel) > 0.001 ? 'Accelerating' : 'At Rest';
+                }
+            }
+        }
+
+        // --- STEP SIMULATION INTEGRATOR ---
+        function stepSimulation(dt, advance = STATE.isRunning) {
+            const scaledDt = dt * STATE.timeScale;
+            const m = STATE.motion;
+
+            calculatePhysics();
+
+            if (advance) {
+                STATE.motionHistory.push({ ...m });
+                if (STATE.motionHistory.length > 2000) STATE.motionHistory.shift();
+                const previousVelocity = m.vel;
+                m.vel += m.accel * scaledDt;
+                if (previousVelocity !== 0 && Math.sign(previousVelocity) !== Math.sign(m.vel)) {
+                    m.vel = 0;
+                }
+                m.pos += m.vel * scaledDt;
+
+                // Pulley rotation tracking
+                m.pulleyAngle += (m.vel * scaledDt) / 0.5;
+
+                const minPosition = -10;
+                if (m.pos > 10 || m.pos < minPosition) {
+                    m.pos = Math.max(minPosition, Math.min(10, m.pos));
+                    m.vel = 0;
+                    STATE.isRunning = false;
+                    document.getElementById('playIcon').className = "fa-solid fa-play";
+                    document.getElementById('playText').textContent = "Play";
+                }
+            }
+
+            updateTelemetryUI();
+        }
+
+        function stepBackSimulation() {
+            if (STATE.isRunning) togglePlay();
+            const previousMotion = STATE.motionHistory.pop();
+            if (!previousMotion) return;
+            Object.assign(STATE.motion, previousMotion);
+            calculatePhysics();
+            updateUI();
+        }
+
+        // --- METRICS & FORMULA CARDS ---
+        function updateUI() {
+            updateMetricsGrid();
+            updateDerivations();
+            updateTelemetryUI();
+        }
+
+        function updateTelemetryUI() {
+            const position = Math.abs(STATE.motion.pos) < 0.005 ? 0 : STATE.motion.pos;
+            document.getElementById('telemetryPos').textContent = position.toFixed(2) + ' m';
+            document.getElementById('telemetryVel').textContent = STATE.motion.vel.toFixed(2) + ' m/s';
+            document.getElementById('telemetryAccel').textContent = STATE.motion.accel.toFixed(2) + ' m/s²';
+
+            const badge = document.getElementById('statusBadge');
+            badge.textContent = STATE.motion.state;
+            if (Math.abs(STATE.motion.accel) > 0.001) {
+                badge.className = "text-xs font-semibold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 animate-pulse";
+            } else {
+                badge.className = "text-xs font-semibold px-3 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700";
+            }
+        }
+
+        function updateMetricsGrid() {
+            const grid = document.getElementById('metricsGrid');
+            grid.innerHTML = '';
+            const m = STATE.motion;
+            const p = STATE.params;
+
+            if (STATE.currentTab === 'inclined') {
+                grid.innerHTML = `
+                    ${renderMetricCard('Acceleration (a)', m.accel.toFixed(2), 'm/s²', 'text-amber-400')}
+                    ${renderMetricCard('Normal Force (N)', m.normalForce.toFixed(1), 'N', 'text-cyan-400')}
+                    ${renderMetricCard('Friction Force (f)', Math.abs(m.frictionForce).toFixed(1), 'N', 'text-amber-500')}
+                    ${renderMetricCard('Gravity Parallel', (p.m * p.g * Math.sin(p.theta*Math.PI/180)).toFixed(1), 'N', 'text-rose-400')}
+                `;
+            } else if (STATE.currentTab === 'pulley') {
+                grid.innerHTML = `
+                    ${renderMetricCard('Acceleration (a)', m.accel.toFixed(2), 'm/s²', 'text-amber-400')}
+                    ${renderMetricCard('Rope Tension (T)', m.tension.toFixed(1), 'N', 'text-purple-400')}
+                    ${renderMetricCard('Table Friction (f1)', Math.abs(m.frictionForce).toFixed(1), 'N', 'text-amber-500')}
+                    ${renderMetricCard('Hanging Weight (W2)', (p.m2 * p.g).toFixed(1), 'N', 'text-rose-400')}
+                `;
+            } else if (STATE.currentTab === 'direct') {
+                const label = p.directType === 'push' ? 'Contact Force (N_AB)' : 'Rope Tension (T)';
+                grid.innerHTML = `
+                    ${renderMetricCard('Acceleration (a)', m.accel.toFixed(2), 'm/s²', 'text-amber-400')}
+                    ${renderMetricCard(label, Math.abs(m.contactForce).toFixed(1), 'N', 'text-pink-400')}
+                    ${renderMetricCard('Total Friction', Math.abs(m.frictionForce).toFixed(1), 'N', 'text-amber-500')}
+                    ${renderMetricCard('Applied Force (F)', p.F_ext.toFixed(1), 'N', 'text-emerald-400')}
+                `;
+            }
+        }
+
+        function renderMetricCard(title, value, unit, colorClass) {
+            return `
+                <div class="glass-card rounded-xl p-3.5 border border-slate-800 flex flex-col justify-between">
+                    <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider truncate">${title}</span>
+                    <div class="mt-2 flex items-baseline justify-between">
+                        <span class="text-lg sm:text-xl font-bold font-mono ${colorClass}">${value}</span>
+                        <span class="text-xs text-slate-500 font-mono ml-1">${unit}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateDerivations() {
+            const box = document.getElementById('physicsDerivation');
+            const p = STATE.params;
+            const m = STATE.motion;
+
+            if (STATE.currentTab === 'inclined') {
+                const rad = (p.theta * Math.PI) / 180;
+                const mg_cos = (p.m * p.g * Math.cos(rad)).toFixed(1);
+                const mg_sin = (p.m * p.g * Math.sin(rad)).toFixed(1);
+                const parallelForce = STATE.direction * (p.F_app - p.m * p.g * Math.sin(rad));
+
+                box.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                            <span class="text-cyan-400 font-bold block mb-1">1. Normal Force:</span>
+                            <span>N = m·g·cos(θ) = ${mg_cos} N</span>
+                        </div>
+                        <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                            <span class="text-emerald-400 font-bold block mb-1">2. Parallel Forces:</span>
+                            <span>F_par = ${STATE.direction}·(F_app - m·g·sin(θ)) = ${parallelForce.toFixed(1)} N</span>
+                        </div>
+                        <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                            <span class="text-amber-400 font-bold block mb-1">3. Net Acceleration:</span>
+                            <span>a = (F_par + f) / m = (${parallelForce.toFixed(1)} + ${m.frictionForce.toFixed(1)}) / ${p.m} = <strong class="text-amber-300">${m.accel.toFixed(2)} m/s²</strong></span>
+                        </div>
+                    </div>
+                `;
+            } else if (STATE.currentTab === 'pulley') {
+                const w2 = (p.m2 * p.g).toFixed(1);
+                const f1 = m.frictionForce.toFixed(1);
+
+                box.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                            <span class="text-indigo-400 font-bold block mb-1">1. System Equations:</span>
+                            <span>T + f1 = m1·a  |  m2·g - T = m2·a</span>
+                        </div>
+                        <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                            <span class="text-amber-400 font-bold block mb-1">2. Acceleration:</span>
+                            <span>a = (${STATE.direction}·m2·g + f1) / (m1+m2) = <strong class="text-amber-300">${m.accel.toFixed(2)} m/s²</strong></span>
+                        </div>
+                        <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                            <span class="text-purple-400 font-bold block mb-1">3. Rope Tension:</span>
+                            <span>T = m2·(g - a) = <strong class="text-purple-300">${m.tension.toFixed(1)} N</strong></span>
+                        </div>
+                    </div>
+                `;
+            } else if (STATE.currentTab === 'direct') {
+                const totalM = p.mA + p.mB;
+                box.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                            <span class="text-emerald-400 font-bold block mb-1">1. Net Driving Force:</span>
+                            <span>F_net = ${STATE.direction}·F + f_total = ${(STATE.direction * p.F_ext).toFixed(1)} + ${m.frictionForce.toFixed(1)} = ${(STATE.direction * p.F_ext + m.frictionForce).toFixed(1)} N</span>
+                        </div>
+                        <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                            <span class="text-amber-400 font-bold block mb-1">2. Combined Acceleration:</span>
+                            <span>a = F_net / (mA + mB) = <strong class="text-amber-300">${m.accel.toFixed(2)} m/s²</strong></span>
+                        </div>
+                        <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                            <span class="text-pink-400 font-bold block mb-1">3. Internal Force:</span>
+                            <span>From the ${p.directType === 'push' ? 'contact-block' : 'rope-connected block'} force balance = <strong class="text-pink-300">${Math.abs(m.contactForce).toFixed(1)} N</strong></span>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // --- ANIMATION LOOP & CANVAS RENDERING ---
+        function gameLoop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const dt = (timestamp - lastTime) / 1000;
+            lastTime = timestamp;
+
+            if (STATE.isRunning && dt < 0.1) {
+                stepSimulation(dt);
+            }
+
+            renderCanvas();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function renderCanvas() {
+            const { width, height } = getCanvasSize();
+            ctx.clearRect(0, 0, width, height);
+
+            // Subtle Background Grid Lines
+            drawCanvasGrid(width, height);
+
+            if (STATE.currentTab === 'inclined') {
+                drawInclinedPlane(width, height);
+            } else if (STATE.currentTab === 'pulley') {
+                drawPulleySystem(width, height);
+            } else if (STATE.currentTab === 'direct') {
+                drawDirectSystem(width, height);
+            }
+        }
+
+        function drawCanvasGrid(w, h) {
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 0.5;
+            const step = 30;
+            for (let x = 0; x < w; x += step) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, h);
+                ctx.stroke();
+            }
+            for (let y = 0; y < h; y += step) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(w, y);
+                ctx.stroke();
+            }
+        }
+
+        // --- VECTOR DRAWING UTILITY ---
+        function drawArrow(fromX, fromY, toX, toY, color, label) {
+            const headlen = 8;
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            const length = Math.hypot(dx, dy);
+
+            if (length < 2) return;
+
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = 2.5;
+
+            // Line
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+
+            // Arrowhead
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+
+            // Label
+            if (label) {
+                ctx.font = 'bold 10px Fira Code, monospace';
+                ctx.fillStyle = '#f8fafc';
+                ctx.fillText(label, toX + Math.cos(angle) * 12, toY + Math.sin(angle) * 12 + 3);
+            }
+
+            ctx.restore();
+        }
+
+        // --- SCENARIO 1: INCLINED PLANE ---
+        function drawInclinedPlane(w, h) {
+            const theta = (STATE.params.theta * Math.PI) / 180;
+            const p = STATE.params;
+            const m = STATE.motion;
+
+            const originX = 60;
+            const originY = h - 50;
+            const rampLength = w - 140;
+
+            const endX = originX + rampLength * Math.cos(theta);
+            const endY = originY - rampLength * Math.sin(theta);
+
+            // Draw Ramp Wedge
+            ctx.beginPath();
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(endX, originY);
+            ctx.lineTo(endX, endY);
+            ctx.closePath();
+
+            const rampGrad = ctx.createLinearGradient(originX, originY, endX, endY);
+            rampGrad.addColorStop(0, '#1e293b');
+            rampGrad.addColorStop(1, '#0f172a');
+            ctx.fillStyle = rampGrad;
+            ctx.fill();
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Ground base line
+            ctx.beginPath();
+            ctx.moveTo(20, originY);
+            ctx.lineTo(w - 20, originY);
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Angle Arc Indicator
+            ctx.beginPath();
+            ctx.arc(originX, originY, 45, 0, -theta, true);
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.font = '11px Fira Code, monospace';
+            ctx.fillStyle = '#34d399';
+            ctx.fillText(`θ=${p.theta}°`, originX + 52, originY - 12);
+
+            // Calculate Box Center Position
+            const pixelDist = rampLength / 2 + (m.pos / 20) * (rampLength - 140);
+            const boxW = 50, boxH = 40;
+
+            const boxCenterX = originX + pixelDist * Math.cos(theta) - (boxH / 2) * Math.sin(theta);
+            const boxCenterY = originY - pixelDist * Math.sin(theta) - (boxH / 2) * Math.cos(theta);
+
+            // Draw Rotated Box
+            ctx.save();
+            ctx.translate(boxCenterX, boxCenterY);
+            ctx.rotate(-theta);
+
+            ctx.fillStyle = '#10b981';
+            ctx.strokeStyle = '#a7f3d0';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.roundRect(-boxW / 2, -boxH / 2, boxW, boxH, 8);
+            ctx.fill();
+            ctx.stroke();
+
+            // Mass Text
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 12px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(`${p.m}kg`, 0, 0);
+
+            ctx.restore();
+
+            // --- VECTORS ---
+            if (!STATE.showVectors) return;
+            const scale = 1.8;
+
+            // 1. Gravity (Down)
+            const Mg = p.m * p.g;
+            drawArrow(boxCenterX, boxCenterY, boxCenterX, boxCenterY + Mg * scale, '#ef4444', `Mg`);
+
+            // 2. Normal Force (Perpendicular to plane)
+            const N = m.normalForce;
+            const Nx = boxCenterX - N * scale * Math.sin(theta);
+            const Ny = boxCenterY - N * scale * Math.cos(theta);
+            drawArrow(boxCenterX, boxCenterY, Nx, Ny, '#06b6d4', `N`);
+
+            // 3. Friction Force (Parallel)
+            if (Math.abs(m.frictionForce) > 0.1) {
+                const fMag = m.frictionForce * scale;
+                const fx = boxCenterX + fMag * Math.cos(theta);
+                const fy = boxCenterY - fMag * Math.sin(theta);
+                drawArrow(boxCenterX, boxCenterY, fx, fy, '#f59e0b', `f`);
+            }
+
+            // 4. Applied Force
+            if (Math.abs(p.F_app) > 0.1) {
+                const Fmag = p.F_app * scale;
+                const Fx = boxCenterX + Fmag * Math.cos(theta);
+                const Fy = boxCenterY - Fmag * Math.sin(theta);
+                drawArrow(boxCenterX, boxCenterY, Fx, Fy, '#10b981', `F_app`);
+            }
+
+            // Component Dashed Arrows
+            if (STATE.showComponents) {
+                const Mg_perp = Mg * Math.cos(theta);
+                const Mg_par = Mg * Math.sin(theta);
+
+                const parX = boxCenterX - Mg_par * scale * Math.cos(theta);
+                const parY = boxCenterY + Mg_par * scale * Math.sin(theta);
+
+                const perpX = boxCenterX - Mg_perp * scale * Math.sin(theta);
+                const perpY = boxCenterY + Mg_perp * scale * Math.cos(theta);
+
+                ctx.save();
+                ctx.setLineDash([4, 4]);
+                drawArrow(boxCenterX, boxCenterY, parX, parY, '#8b5cf6', 'mg sinθ');
+                drawArrow(boxCenterX, boxCenterY, perpX, perpY, '#38bdf8', 'mg cosθ');
+                ctx.restore();
+            }
+        }
+
+        // --- SCENARIO 2: PULLEY SYSTEM ---
+        function drawPulleySystem(w, h) {
+            const p = STATE.params;
+            const m = STATE.motion;
+
+            const tableX = 40;
+            const tableY = h - 130;
+            const tableW = w - 200;
+            const tableH = 130;
+
+            // Table Body
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(tableX, tableY, tableW, tableH);
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(tableX, tableY, tableW, tableH);
+
+            // Pulley Wheel Position
+            const pulleyR = 18;
+            const pulleyX = tableX + tableW;
+            const pulleyY = tableY;
+
+            // Pulley Rotation Wheel
+            ctx.save();
+            ctx.translate(pulleyX, pulleyY);
+            ctx.rotate(m.pulleyAngle);
+
+            ctx.beginPath();
+            ctx.arc(0, 0, pulleyR, 0, Math.PI * 2);
+            ctx.fillStyle = '#334155';
+            ctx.fill();
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Spokes for Rotation Effect
+            ctx.beginPath();
+            ctx.moveTo(-pulleyR + 2, 0); ctx.lineTo(pulleyR - 2, 0);
+            ctx.moveTo(0, -pulleyR + 2); ctx.lineTo(0, pulleyR - 2);
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.restore();
+
+            // Pulley Mount
+            ctx.beginPath();
+            ctx.moveTo(pulleyX, pulleyY);
+            ctx.lineTo(tableX + tableW, tableY + 22);
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // Position mapping
+            const travelRange = tableW - 120;
+            const m1_x = tableX + 40 + (m.pos / 10) * travelRange;
+            const m1_y = tableY - 25;
+
+            const m2_x = pulleyX + pulleyR;
+            const m2_y = tableY + 45 + (m.pos / 10) * (h - tableY - 95);
+
+            // Draw Block 1 (Flat surface)
+            const b1W = 50, b1H = 50;
+            ctx.fillStyle = '#3b82f6';
+            ctx.strokeStyle = '#93c5fd';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.roundRect(m1_x - b1W / 2, m1_y - b1H / 2, b1W, b1H, 8);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 12px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(`m1: ${p.m1}kg`, m1_x, m1_y);
+
+            // Draw Block 2 (Hanging)
+            const b2W = 45, b2H = 45;
+            ctx.fillStyle = '#ef4444';
+            ctx.strokeStyle = '#fca5a5';
+            ctx.beginPath();
+            ctx.roundRect(m2_x - b2W / 2, m2_y - b2H / 2, b2W, b2H, 8);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(`m2: ${p.m2}kg`, m2_x, m2_y);
+
+            // Connecting String
+            ctx.beginPath();
+            ctx.moveTo(m1_x + b1W / 2, m1_y);
+            ctx.lineTo(pulleyX, pulleyY - pulleyR);
+            ctx.arc(pulleyX, pulleyY, pulleyR, -Math.PI / 2, 0);
+            ctx.lineTo(m2_x, m2_y - b2H / 2);
+            ctx.strokeStyle = '#8b5cf6';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            // --- VECTORS ---
+            if (!STATE.showVectors) return;
+            const scale = 2.0;
+
+            // Block 1 Vectors
+            drawArrow(m1_x, m1_y, m1_x + m.tension * scale, m1_y, '#8b5cf6', `T`);
+            if (Math.abs(m.frictionForce) > 0.1) {
+                drawArrow(m1_x, m1_y, m1_x + m.frictionForce * scale, m1_y, '#f59e0b', `f`);
+            }
+            drawArrow(m1_x, m1_y, m1_x, m1_y + p.m1 * p.g * scale, '#ef4444', `m1g`);
+            drawArrow(m1_x, m1_y, m1_x, m1_y - m.normalForce * scale, '#06b6d4', `N1`);
+
+            // Block 2 Vectors
+            drawArrow(m2_x, m2_y, m2_x, m2_y - m.tension * scale, '#8b5cf6', `T`);
+            drawArrow(m2_x, m2_y, m2_x, m2_y + p.m2 * p.g * scale, '#ef4444', `m2g`);
+        }
+
+        // --- SCENARIO 3: TWO-BODY DIRECT SYSTEM ---
+        function drawDirectSystem(w, h) {
+            const p = STATE.params;
+            const m = STATE.motion;
+
+            const groundY = h - 70;
+
+            // Surface Base
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(20, groundY, w - 40, 70);
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(10, groundY);
+            ctx.lineTo(w - 10, groundY);
+            ctx.stroke();
+
+            // Position Mapping
+            const travelRange = w - 280;
+            const startX = 80 + (m.pos / 10) * travelRange;
+
+            const boxA_W = 55, boxA_H = 45;
+            const boxB_W = 45, boxB_H = 38;
+
+            let boxA_X, boxB_X;
+
+            if (p.directType === 'push') {
+                boxA_X = startX;
+                boxB_X = startX + boxA_W; // Adjacent touching
+            } else {
+                const gap = 50; // String gap
+                boxA_X = startX;
+                boxB_X = startX + boxA_W + gap;
+            }
+
+            const boxA_Y = groundY - boxA_H / 2;
+            const boxB_Y = groundY - boxB_H / 2;
+
+            // Draw Block A
+            ctx.fillStyle = '#3b82f6';
+            ctx.strokeStyle = '#93c5fd';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.roundRect(boxA_X, boxA_Y - boxA_H / 2, boxA_W, boxA_H, 8);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 12px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(`mA: ${p.mA}kg`, boxA_X + boxA_W / 2, boxA_Y);
+
+            // Draw Block B
+            ctx.fillStyle = '#ec4899';
+            ctx.strokeStyle = '#fbcfe8';
+            ctx.beginPath();
+            ctx.roundRect(boxB_X, boxB_Y - boxB_H / 2, boxB_W, boxB_H, 8);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(`mB: ${p.mB}kg`, boxB_X + boxB_W / 2, boxB_Y);
+
+            // Connecting String for Pull
+            if (p.directType === 'pull') {
+                ctx.beginPath();
+                ctx.moveTo(boxA_X + boxA_W, boxA_Y);
+                ctx.lineTo(boxB_X, boxB_Y);
+                ctx.strokeStyle = '#ec4899';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+
+            // --- VECTORS ---
+            if (!STATE.showVectors) return;
+            const scale = 1.8;
+
+            const centerA_X = boxA_X + boxA_W / 2;
+            const centerB_X = boxB_X + boxB_W / 2;
+            const direction = STATE.direction;
+
+            // 1. External Applied Force
+            if (p.directType === 'push') {
+                if (direction > 0) {
+                    drawArrow(boxA_X - p.F_ext * scale, boxA_Y, boxA_X, boxA_Y, '#10b981', `F`);
+                } else {
+                    drawArrow(boxB_X + boxB_W + p.F_ext * scale, boxB_Y, boxB_X + boxB_W, boxB_Y, '#10b981', `F`);
+                }
+            } else {
+                if (direction > 0) {
+                    drawArrow(boxB_X + boxB_W, boxB_Y, boxB_X + boxB_W + p.F_ext * scale, boxB_Y, '#10b981', `F`);
+                } else {
+                    drawArrow(boxA_X - p.F_ext * scale, boxA_Y, boxA_X, boxA_Y, '#10b981', `F`);
+                }
+            }
+
+            // 2. Internal Force (Contact or Tension)
+            if (p.directType === 'push') {
+                if (Math.abs(m.contactForce) > 0.1) {
+                    drawArrow(boxA_X + boxA_W, boxA_Y, boxA_X + boxA_W + direction * Math.abs(m.contactForce) * scale, boxA_Y, '#ec4899', `N_AB`);
+                }
+            } else {
+                if (Math.abs(m.tension) > 0.1) {
+                    drawArrow(boxA_X + boxA_W, boxA_Y, boxA_X + boxA_W + m.tension * scale, boxA_Y, '#ec4899', `T`);
+                    drawArrow(boxB_X, boxB_Y, boxB_X - m.tension * scale, boxB_Y, '#ec4899', `T`);
+                }
+            }
+
+            // 3. Frictions
+            const frictionDirection = Math.sign(m.frictionForce);
+            const totalMass = p.mA + p.mB;
+            const isStatic = m.state === 'Static Hold';
+            const fA = isStatic ? Math.abs(m.frictionForce) * p.mA / totalMass : p.mu_d * p.mA * p.g;
+            const fB = isStatic ? Math.abs(m.frictionForce) * p.mB / totalMass : p.mu_d * p.mB * p.g;
+            if (fA > 0.1) drawArrow(centerA_X, boxA_Y, centerA_X + frictionDirection * fA * scale, boxA_Y, '#f59e0b', `fA`);
+            if (fB > 0.1) drawArrow(centerB_X, boxB_Y, centerB_X + frictionDirection * fB * scale, boxB_Y, '#f59e0b', `fB`);
+        }
+    </script>
+</body>
+</html>
